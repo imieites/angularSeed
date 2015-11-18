@@ -1,0 +1,17 @@
+
+# npm stuff
+node_modules
+npm-debug.log
+.DS_Store*
+*.swp
+*.tmp
+# local mongodb, if there's one.
+data
+# ignore heroku environment variables file:
+.env
+# folder for personal notes
+notes
+# snippets and scripts
+snippets
+# builds
+builds
