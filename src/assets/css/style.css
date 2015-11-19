@@ -1,0 +1,9 @@
+body {
+	overflow-x: hidden;
+	-ms-overflow-style: scrollbar;
+	font-family: Raleway,sans-serif;
+}
+
+.well {
+  background-color: #FFFFFF;
+}

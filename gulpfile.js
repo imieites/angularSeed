@@ -1,43 +1,87 @@
+"use strict";
 // Requires
 
+var lazypipe = require('lazypipe');
 var gulp = require('gulp');
-var gutil = require('gulp-util');
+var util = require('gulp-util');
+var header = require('gulp-header');
+var size = require('gulp-size');
+var htmlhint = require("gulp-htmlhint");
 var jshint = require('gulp-jshint');
+var csslint = require('gulp-csslint');
 var gulpif = require('gulp-if');
-var uglify = require('gulp-uglify');
-var minifyHTML = require('gulp-minify-html');
+var htmlMinify = require('gulp-minify-html');
+var htmlPrettify = require('gulp-html-prettify');
+var jsUglify = require('gulp-uglify');
+var jsPrettify = require('gulp-js-prettify');
+var cssMinify = require('gulp-minify-css');
+var cssBeautify = require('gulp-cssbeautify');
 var argv = require('yargs').argv;
 var browserSync = require('browser-sync').create();
+var pkg = require('./package.json');
+var pkgInfo = '<%= pkg.name %>@v<%= pkg.version %> || License: <%= pkg.license %> || Author: <%= pkg.author %>';
 
 // Comments
 /*  */
 
 
-// To do:
-// html, js, css prettify y uglify segun corresponda
-// inyectar dependencias bower como cdn fallback
-// ver en ponyfoo los comments que le agrega a los minified, ver que los tome de un archivo
-// ver ponyfoo: https://ponyfoo.com/articles/choose-grunt-gulp-or-npm y https://ponyfoo.com/articles/my-first-gulp-adventure
-// ver https://www.npmjs.com/package/gulp-htmlhint
-// browserify: http://browserify.org/
+// Future features:
+/*
+inyectar dependencias bower como cdn fallback
+unit testing
+git pushing?
+browserify: http://browserify.org/
+*/
 
 
-// Init
+// Init Dirs
 
 var sourceDir = "./src";
 
+
+// Define environment
+var outputDir;
 if(!argv.prod){ // dev mode
   outputDir = './builds/dev';
-  gutil.log("Running in Development mode.")
+  util.log("Running in Development mode.")
 }
 else { // prod mode: si ejecuto gulp --prod, entra en modo prod
   outputDir = './builds/prod';
-  gutil.log("Running in Production mode.")
+  util.log("Running in Production mode.");
 }
 
-gutil.log("Output directory is: "+outputDir);
+util.log("Output directory is: "+outputDir);
 
-// Tasks
+// Lazypipe Tasks
+// note: lazypipe().pipe() takes functions without parenthesis and the arguments after the comma
+// more info: https://github.com/OverZealous/lazypipe
+
+var htmlDev = lazypipe()
+  .pipe(htmlPrettify,{indent_char: ' ', indent_size: 2});
+
+var htmlProd = lazypipe()
+  .pipe(htmlMinify);
+
+var jsDev = lazypipe()
+  .pipe(jsPrettify);
+
+var jsProd = lazypipe()
+  .pipe(jsUglify);
+
+var cssDev = lazypipe()
+  .pipe(cssBeautify);
+
+var cssProd = lazypipe()
+  .pipe(cssMinify);
+
+// Gulp Tasks
+
+gulp.task('htmlhint', function() {
+  return gulp.src(sourceDir+'/**/*.html')
+    .pipe(htmlhint())
+    .pipe(htmlhint.reporter('htmlhint-stylish'));
+});
+
 
 gulp.task('jshint', function() {
   return gulp.src(sourceDir+'/**/*.js')
@@ -45,24 +89,37 @@ gulp.task('jshint', function() {
     .pipe(jshint.reporter('jshint-stylish'));
 });
 
+gulp.task('csslint', function() {
+  return gulp.src(sourceDir+'/**/*.css')
+    .pipe(csslint()) // at the moment the custom formatter for gulp-csslint isn't working
+});
+
+gulp.task('html',['htmlhint'], function() {
+  return gulp.src(sourceDir+'/**/*.html')
+    .pipe(size({title:'HTML files size in source:'})) // muestro el tamaño antes
+    .pipe( gulpif(argv.prod, htmlProd(), htmlDev()) ) // ejecuta tareas de prod o dev
+    .pipe(header("<!-- "+pkgInfo+" -->\n", { pkg : pkg }))
+    .pipe(size({title:'HTML files size in dest:'})) // muestro el tamaño después
+    .pipe(gulp.dest(outputDir));
+});
+
 gulp.task('js',['jshint'], function() {
   return gulp.src(sourceDir+'/**/*.js')
-    //.pipe(gulpif(argv.prod, uglify(), prettify())) // si es prod hace uglify, si no hace prettify
-    .pipe(gulp.dest(outputDir));
+  .pipe(size({title:'JS files size in source:'})) // muestro el tamaño antes
+  .pipe( gulpif(argv.prod, jsProd(), jsDev()) ) // ejecuta tareas de prod o dev
+  .pipe(header("// "+pkgInfo+"\n", { pkg : pkg }))
+  .pipe(size({title:'JS files size in dest:'})) // muestro el tamaño después
+  .pipe(gulp.dest(outputDir));
 });
 
-gulp.task('html', function() {
-  return gulp.src(sourceDir+'/**/*.html')
-    //.pipe(gulpif(argv.prod, uglify(), prettify())) // si es prod hace uglify, si no hace prettify
-    .pipe(gulp.dest(outputDir));
-});
-
-gulp.task('css', function() {
+gulp.task('css',['csslint'], function() {
   return gulp.src(sourceDir+'/**/*.css')
-    //.pipe(gulpif(argv.prod, uglify(), prettify())) // si es prod hace uglify, si no hace prettify
+    .pipe(size({title:'CSS files size in source:'})) // muestro el tamaño antes
+    .pipe(gulpif(argv.prod, cssProd(), cssDev()) ) // si es prod hace minify, si no hace beautify
+    .pipe(header("/* "+pkgInfo+" */\n", { pkg : pkg }))
+    .pipe(size({title:'CSS files size in dest:'})) // muestro el tamaño después
     .pipe(gulp.dest(outputDir));
 });
-
 
 // Server
 

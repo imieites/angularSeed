@@ -16,11 +16,11 @@ See package.json and gulpfile.js for details.
 
 This will run the default tasks for running a development build:
 
-npm run dev
+npm run gulp
 
 This will run the default tasks for running a production build:
 
-npm run prod
+npm run gulp -- --prod
 
 * Database configuration: none so far.
 * How to run tests: none so far.
