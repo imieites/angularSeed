@@ -121,6 +121,10 @@ gulp.task('css',['csslint'], function() {
     .pipe(gulp.dest(outputDir));
 });
 
+gulp.task('html-reload', ['html'], browserSync.reload);
+gulp.task('js-reload', ['js'], browserSync.reload);
+gulp.task('css-reload', ['css'], browserSync.reload);
+
 // Server
 
 gulp.task('server',['html','css','js'], function() {
@@ -131,9 +135,9 @@ gulp.task('server',['html','css','js'], function() {
   });
 
   // watching for changes
-  gulp.watch(sourceDir + "/**/*.html",['html'], browserSync.reload);
-  gulp.watch(sourceDir + "/**/*.js", ['js'], browserSync.reload);
-  gulp.watch(sourceDir + "/**/*.css", ['css'], browserSync.reload);
+  gulp.watch(sourceDir + "/**/*.html",['html-reload']);
+  gulp.watch(sourceDir + "/**/*.js", ['js-reload']);
+  gulp.watch(sourceDir + "/**/*.css", ['css-reload']);
 
 });
 
